@@ -14,12 +14,11 @@ try:
     print('Recording measurements... Press Crl+C to stop.')
     for scan in lidar.iter_scans():
         data.append(np.array(scan))
-        print ("Array 0")
-        print (np.array(scan[0]))
-        print ("Array 1")
-        print (np.array(scan[1]))
+        print ("Quality:", np.array(scan[1][0]))
+        print ("Angle: ", np.array(scan[1][1]))
+        print ("Distance:", np.array(scan[1][2]))
 except KeyboardInterrupt:
-    print('Stopping.')
+    print("Stopping...")
     lidar.stop()
     lidar.stop_motor()
     lidar.disconnect()
