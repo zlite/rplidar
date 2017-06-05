@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-'''Records measurments to a given file. Usage example:
-
-$ ./record_measurments.py out.txt'''
+'''This is an example of a multithreading Lidar-reading program that drives a rover via the PyCommandMessanger messaging library.
+It uses an event-driven hardware abstraction architectre, where the events in this case are detected obstacles or timers, and the
+messaging library provides the hardware abstraction.'''
 import sys
 import time
 import asyncio
