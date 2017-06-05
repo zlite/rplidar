@@ -84,13 +84,11 @@ async def drive():
     await asyncio.sleep(0)  # go back to running other threads
         
 
-async def gr3():
+async def gr3():   # this is just a stub so you can add more tasks if you want
     print("Let's do some stuff while the coroutines are blocked, {}".format(tic()))
     time3 = time.time()
     while True:
       # do some work here
-      if time.time() > time3 + 20:
-        print("Done!")
       await asyncio.sleep(0)
 
 def run():
@@ -109,7 +107,7 @@ def run():
     ioloop.run_until_complete(asyncio.wait(tasks))
     ioloop.close()
     try:
-        i =0
+        i = 0  # just a placeholder for any task you want to run in the main loop
     except KeyboardInterrupt:
         print('Stopping.')
         lidar.stop()
