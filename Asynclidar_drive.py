@@ -2,7 +2,8 @@
 '''
 This is an example of a multithreading Lidar-reading program that drives a rover via the PyCommandMessanger messaging library.
 It uses an event-driven hardware abstraction architectre, where the events in this case are detected obstacles or timers, and the
-messaging library provides the hardware abstraction.
+messaging library provides the hardware abstraction. It requires Python 3.5 or above. To install that on RaspberryPi, follow these
+instructions: http://bohdan-danishevsky.blogspot.com/2017/01/building-python-360-on-raspberry-pi-3.html
 '''
 import sys
 import time
