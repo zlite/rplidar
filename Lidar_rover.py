@@ -8,9 +8,9 @@ from rplidar import RPLidar
 import PyCmdMessenger
 import math
 
-angle_offset = 45
-gain = 1.5
-speed = 120
+angle_offset = 50
+gain = 2.0
+speed = 100
 left = 0
 right = 0
 start = time.time()
@@ -38,12 +38,13 @@ c = PyCmdMessenger.CmdMessenger(myarduino,commands)
 
 
 def scan(lidar):
-    global average_angle, stop
+    global stop
     time1 = time.time()
     while True:
         counter = 0
         print('Recording measurements... Press Crl+C to stop.')
         data = 0
+        range_sum = 0
         lasttime = time.time()
         for measurment in lidar.iter_measurments():
             if stop == True:
@@ -54,22 +55,26 @@ def scan(lidar):
                 break
             if (measurment[2] > 0 and measurment[2] < 90):  # in angular range
                 if (measurment[3] < 1000 and measurment[3] > 100): # in distance range
-                    data = data + measurment[2] # angle
+                    data = data + measurment[2] # angle weighted by distance; basically we're coming up with an obstacle centroid
+#                    range_sum = range_sum + measurment[3] # sum all the distances so we can normalize later
                     counter = counter + 1 # increment counter
             if time.time() > (lasttime + 0.1):
-                print("this should happen ten times a second")
+#                print("this should happen ten times a second")
                 if counter > 0:  # this means we see something
-                    average_angle = data/counter
-                    drive()
-                    print ("Average Angle: ", average_angle-angle_offset)
-                    counter = 0
+                    average_angle = (data/counter) # average of detected angles
+                    angle = average_angle - angle_offset # compensate for the Lidar being 50 degrees rotated
+                    drive(angle)
+                    print ("Angle: ", angle)
+                    counter = 0 # reset counter
+                    data = 0  # reset data
+                    range_sum = 0
                 lasttime = time.time()  # reset 10Hz timer
 
-def drive():
-    global speed, gain, angle_offset, average_angle, stop
-    print("drive")
+def drive(angle):
+    global speed, gain, stop
+#    print("drive")
     # Send motor commands
-    steer = int(100*math.atan(math.radians(average_angle-angle_offset)))
+    steer = int(100*math.atan(math.radians(angle)))
     print ("steer: ", steer * gain)
     if steer <= 0:
         right = -1 * steer * gain
@@ -78,7 +83,7 @@ def drive():
         left = steer * gain
         right = 0
     print (speed, left, right) 
-    c.send("motors",speed,left,right)
+    c.send("motors",speed,int(left),int(right))
 
 def run():
     '''Main function'''
@@ -91,6 +96,7 @@ def run():
     try:
         scan(lidar)
     except KeyboardInterrupt:
+        stop = True
         print('Stopping.')
         lidar.stop()
         lidar.stop_motor()
