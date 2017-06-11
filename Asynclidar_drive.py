@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
-'''
-This is an example of a multithreading Lidar-reading program that drives a rover via the PyCommandMessanger messaging library.
-It uses an event-driven hardware abstraction architectre, where the events in this case are detected obstacles or timers, and the
-messaging library provides the hardware abstraction. It requires Python 3.5 or above. To install that on RaspberryPi, follow these
-instructions: http://bohdan-danishevsky.blogspot.com/2017/01/building-python-360-on-raspberry-pi-3.html
-'''
+'''Records measurments to a given file. Usage example:
+
+$ ./record_measurments.py out.txt'''
 import sys
 import time
 import asyncio
@@ -18,6 +15,7 @@ speed = 70
 left = 0
 right = 0
 start = time.time()
+stop = False
 
 PORT_NAME = '/dev/ttyUSB0' # this is for the Lidar
 
@@ -44,7 +42,7 @@ def tic():
 
 async def scan(lidar):
     print('10Hz loop started work: {}'.format(tic()))
-    global average_angle
+    global average_angle, stop
     time1 = time.time()
     while True:
         counter = 0
@@ -53,6 +51,14 @@ async def scan(lidar):
         lasttime = time.time()
         for measurment in lidar.iter_measurments():
             await asyncio.sleep(0)  # this allows other threads to run
+            if stop == True:
+                lidar.stop()
+                lidar.stop_motor()
+                c.send("motors",0,0,0)  # turn off wheel motors
+                lidar.disconnect()
+                ioloop.stop
+                task.cancel(scan(lidar))
+                break
             if (measurment[2] > 0 and measurment[2] < 90):  # in angular range
                 if (measurment[3] < 1000 and measurment[3] > 100): # in distance range
                     data = data + measurment[2] # angle
@@ -66,10 +72,10 @@ async def scan(lidar):
                 lasttime = time.time()  # reset 10Hz timer
 
 async def drive():
-    global speed
-    global gain
-    global angle_offset
-    global average_angle
+    global speed, gain, angle_offset, average_angle
+    if stop == True:
+        task.cancel(drive())
+        ioloop.stop
     if time.time() > time2 + 0.1: # run this ten times a second 
         # Send motor commands
         steer = int(100*math.atan(math.radians(average_angle-angle_offset)))
@@ -85,38 +91,33 @@ async def drive():
         print('Drive command sent: {}'.format(tic()))
         time2 = time.time()
     await asyncio.sleep(0)  # go back to running other threads
-        
 
-async def gr3():   # this is just a stub so you can add more tasks if you want
-    print("Let's do some stuff while the coroutines are blocked, {}".format(tic()))
-    time3 = time.time()
-    while True:
-      # do some work here
-      await asyncio.sleep(0)
 
 def run():
     '''Main function'''
-    lidar = RPLidar(PORT_NAME)
-    lidar.start_motor()
-    time.sleep(1)
-    info = lidar.get_info()
-    print(info)
-    ioloop = asyncio.get_event_loop()
-    tasks = [
-    	    ioloop.create_task(scan(lidar)),
-    	    ioloop.create_task(drive()),
-    	    ioloop.create_task(gr3())
-	    ]
-    ioloop.run_until_complete(asyncio.wait(tasks))
-    ioloop.close()
-    try:
-        i = 0  # just a placeholder for any task you want to run in the main loop
-    except KeyboardInterrupt:
-        print('Stopping.')
-        lidar.stop()
-        lidar.stop_motor()
-        c.send("motors",0,0,0)  # turn off wheel motors
-        lidar.disconnect()
+    global stop
+    if stop == False:
+        lidar = RPLidar(PORT_NAME)
+        lidar.start_motor()
+        time.sleep(1)
+        info = lidar.get_info()
+        print(info)
+        ioloop = asyncio.get_event_loop()
+        tasks = [
+                ioloop.create_task(scan(lidar)),
+                ioloop.create_task(drive())
+                ]
+        try:
+            ioloop.run_until_complete(asyncio.wait(tasks))
+        except KeyboardInterrupt:
+            print('Stopping.')
+            stop = True
+            lidar.stop()
+            lidar.stop_motor()
+            c.send("motors",0,0,0)  # turn off wheel motors
+            lidar.disconnect()
+            ioloop.close()
+        
  
 if __name__ == '__main__':
     run()
