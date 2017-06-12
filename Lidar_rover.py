@@ -8,11 +8,10 @@ from rplidar import RPLidar
 import PyCmdMessenger
 import math
 
-angle_offset = 50
-gain = 2.0
-speed = 100
-left = 0
-right = 0
+angle_offset = 50 # this compensates for the Lidar being placed in a rotated position
+gain = 2.0 # this is the steering gain
+speed = 80 # crusing speed
+steering_correction = -10 # this compensates for any steering bias the car has. Positive numbers steer to the right
 start = time.time()
 stop = False
 
@@ -61,29 +60,27 @@ def scan(lidar):
             if time.time() > (lasttime + 0.1):
 #                print("this should happen ten times a second")
                 if counter > 0:  # this means we see something
-                    average_angle = (data/counter) # average of detected angles
-                    angle = average_angle - angle_offset # compensate for the Lidar being 50 degrees rotated
-                    drive(angle)
-                    print ("Angle: ", angle)
+                    average_angle = (data/counter) - angle_offset # average of detected angles
+                    obstacle_direction = int(100*math.atan(math.radians(average_angle)))  # convert to a vector component
+                    drive_direction = -1 * obstacle_direction # steer in the opposite direction as obstacle (I'll replace this with a PID)
+                    steer(drive_direction)  # Send data to motors
+                    print ("Drive direction: ", drive_direction)
                     counter = 0 # reset counter
                     data = 0  # reset data
                     range_sum = 0
                 lasttime = time.time()  # reset 10Hz timer
 
-def drive(angle):
+def steer(angle):
     global speed, gain, stop
-#    print("drive")
     # Send motor commands
-    steer = int(100*math.atan(math.radians(angle)))
-    print ("steer: ", steer * gain)
-    if steer <= 0:
-        right = -1 * steer * gain
-        left = 0
-    else:
-        left = steer * gain
-        right = 0
-    print (speed, left, right) 
-    c.send("motors",speed,int(left),int(right))
+    if angle >= 0:  # steer to right
+        right_wheels = (-1 * angle * gain) + steering_correction  # slow down right wheels to steer left
+        left_wheels = (-1*right_wheels) # do the opposite of what the right does
+    else: # steer to left
+        right_wheels = (1 * angle * gain) + steering_correction # speed up right wheels to steer right
+        left_wheels = (-1*right_wheels)  # do the opposite of what the right does
+    print (speed, left_wheels, right_wheels) 
+    c.send("motors: ",speed,int(left_wheels),int(right_wheels))
 
 def run():
     '''Main function'''
