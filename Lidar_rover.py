@@ -79,7 +79,7 @@ def steer(angle):
     else: # steer to left
         right_wheels = (1 * angle * gain) # speed up right wheels to steer right
         left_wheels = (-1*right_wheels)  # do the opposite of what the right does
-    right_wheels = right_wheels + steering_correction  # modify to compensation for steering being askew
+    right_wheels = right_wheels + steering_correction  # modify to compensate for steering being askew
     left_wheels = left_wheels - steering_correction
     print (speed, left_wheels, right_wheels) 
     c.send("motors",speed,int(left_wheels),int(right_wheels))
