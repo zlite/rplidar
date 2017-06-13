@@ -80,7 +80,7 @@ def steer(angle):
         right_wheels = (1 * angle * gain) + steering_correction # speed up right wheels to steer right
         left_wheels = (-1*right_wheels)  # do the opposite of what the right does
     print (speed, left_wheels, right_wheels) 
-    c.send("motors: ",speed,int(left_wheels),int(right_wheels))
+    c.send("motors",speed,int(left_wheels),int(right_wheels))
 
 def run():
     '''Main function'''
