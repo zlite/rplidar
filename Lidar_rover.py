@@ -74,11 +74,13 @@ def steer(angle):
     global speed, gain, stop
     # Send motor commands
     if angle >= 0:  # steer to right
-        right_wheels = (-1 * angle * gain) + steering_correction  # slow down right wheels to steer left
+        right_wheels = (-1 * angle * gain)  # slow down right wheels to steer left
         left_wheels = (-1*right_wheels) # do the opposite of what the right does
     else: # steer to left
-        right_wheels = (1 * angle * gain) + steering_correction # speed up right wheels to steer right
+        right_wheels = (1 * angle * gain) # speed up right wheels to steer right
         left_wheels = (-1*right_wheels)  # do the opposite of what the right does
+    right_wheels = right_wheels + steering_correction  # modify to compensation for steering being askew
+    left_wheels = left_wheels - steering_correction
     print (speed, left_wheels, right_wheels) 
     c.send("motors",speed,int(left_wheels),int(right_wheels))
 
