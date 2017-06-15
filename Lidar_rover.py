@@ -9,9 +9,9 @@ import PyCmdMessenger
 import math
 
 angle_offset = 50 # this compensates for the Lidar being placed in a rotated position
-gain = 2.0 # this is the steering gain
+gain = 3.0 # this is the steering gain
 speed = 80 # crusing speed
-steering_correction = -10 # this compensates for any steering bias the car has. Positive numbers steer to the right
+steering_correction = -20 # this compensates for any steering bias the car has. Positive numbers steer to the right
 start = time.time()
 stop = False
 
@@ -68,19 +68,17 @@ def scan(lidar):
                     counter = 0 # reset counter
                     data = 0  # reset data
                     range_sum = 0
+                else:
+                    c.send("motors",speed,steering_correction,-steering_correction)  # drive straight ahead
                 lasttime = time.time()  # reset 10Hz timer
 
 def steer(angle):
     global speed, gain, stop
     # Send motor commands
-    if angle >= 0:  # steer to right
-        right_wheels = (-1 * angle * gain)  # slow down right wheels to steer left
-        left_wheels = (-1*right_wheels) # do the opposite of what the right does
-    else: # steer to left
-        right_wheels = (1 * angle * gain) # speed up right wheels to steer right
-        left_wheels = (-1*right_wheels)  # do the opposite of what the right does
-    right_wheels = right_wheels + steering_correction  # modify to compensate for steering being askew
-    left_wheels = left_wheels - steering_correction
+    right_wheels = (-1 * angle * gain)  # slow down right wheels to steer right and vice versa
+    left_wheels = (-1*right_wheels) # do the opposite of what the right does
+    right_wheels = right_wheels - steering_correction  # modify to compensate for steering being askew
+    left_wheels = left_wheels + steering_correction
     print (speed, left_wheels, right_wheels) 
     c.send("motors",speed,int(left_wheels),int(right_wheels))
 
@@ -90,7 +88,7 @@ def run():
     lidar.start_motor()
     time.sleep(1)
     info = lidar.get_info()
-    c.send("motors",speed,0,0) # start by going forward
+    c.send("motors",speed, steering_correction,-steering_correction)  # drive straight ahead
     print(info)
     try:
         scan(lidar)
