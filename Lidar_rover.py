@@ -9,9 +9,9 @@ import PyCmdMessenger
 import math
 
 angle_offset = 50 # this compensates for the Lidar being placed in a rotated position
-gain = 3.0 # this is the steering gain
-speed = 80 # crusing speed
-steering_correction = -20 # this compensates for any steering bias the car has. Positive numbers steer to the right
+gain = 2.0 # this is the steering gain
+speed = 90 # crusing speed
+steering_correction = -35 # this compensates for any steering bias the car has. Positive numbers steer to the right
 start = time.time()
 stop = False
 
@@ -34,7 +34,6 @@ commands = [["motors","iii"], # motor power, left, right
 
 # Initialize the messenger
 c = PyCmdMessenger.CmdMessenger(myarduino,commands)
-
 
 def scan(lidar):
     global stop
@@ -69,7 +68,9 @@ def scan(lidar):
                     data = 0  # reset data
                     range_sum = 0
                 else:
-                    c.send("motors",speed,steering_correction,-steering_correction)  # drive straight ahead
+                    right_wheels = -1 * steering_correction  # modify to compensate for steering being askew
+                    left_wheels = steering_correction
+                    print (speed, left_wheels, right_wheels) 
                 lasttime = time.time()  # reset 10Hz timer
 
 def steer(angle):
