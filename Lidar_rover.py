@@ -10,8 +10,8 @@ import math
 
 angle_offset = 50 # this compensates for the Lidar being placed in a rotated position
 gain = 2.0 # this is the steering gain
-speed = 90 # crusing speed
-steering_correction = -35 # this compensates for any steering bias the car has. Positive numbers steer to the right
+speed = 70 # crusing speed
+steering_correction = -10 # this compensates for any steering bias the car has. Positive numbers steer to the right
 start = time.time()
 stop = False
 
@@ -62,15 +62,13 @@ def scan(lidar):
                     average_angle = (data/counter) - angle_offset # average of detected angles
                     obstacle_direction = int(100*math.atan(math.radians(average_angle)))  # convert to a vector component
                     drive_direction = -1 * obstacle_direction # steer in the opposite direction as obstacle (I'll replace this with a PID)
-                    steer(drive_direction)  # Send data to motors
                     print ("Drive direction: ", drive_direction)
                     counter = 0 # reset counter
                     data = 0  # reset data
                     range_sum = 0
                 else:
-                    right_wheels = -1 * steering_correction  # modify to compensate for steering being askew
-                    left_wheels = steering_correction
-                    print (speed, left_wheels, right_wheels) 
+                    drive_direction = 0
+                steer(drive_direction)  # Send data to motors
                 lasttime = time.time()  # reset 10Hz timer
 
 def steer(angle):
@@ -89,7 +87,6 @@ def run():
     lidar.start_motor()
     time.sleep(1)
     info = lidar.get_info()
-    c.send("motors",speed, steering_correction,-steering_correction)  # drive straight ahead
     print(info)
     try:
         scan(lidar)
