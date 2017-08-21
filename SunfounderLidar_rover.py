@@ -14,7 +14,7 @@ pwm = Adafruit_PCA9685.PCA9685()
 
 angle_offset = 50 # this compensates for the Lidar being placed in a rotated position
 gain = 2.0 # this is the steering gain
-speed = 70 # crusing speed
+speed = 500 # crusing speed
 steering_correction = -10 # this compensates for any steering bias the car has. Positive numbers steer to the right
 start = time.time()
 stop = False
@@ -67,6 +67,7 @@ def scan(lidar):
 
 def steer(angle):
     global speed, gain, stop
+    drive (speed)
     servo (0,angle)
     # Send motor commands
 
@@ -85,7 +86,7 @@ def run():
         print('Stopping.')
         lidar.stop()
         lidar.stop_motor()
-        drive (200)
+        drive (0)
         lidar.disconnect()
  
 if __name__ == '__main__':
