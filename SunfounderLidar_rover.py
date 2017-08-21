@@ -13,21 +13,31 @@ import Adafruit_PCA9685
 pwm = Adafruit_PCA9685.PCA9685()
 
 angle_offset = 50 # this compensates for the Lidar being placed in a rotated position
-gain = 2.0 # this is the steering gain
-speed = 500 # crusing speed
+gain = 2 # this is the steering gain. The PWM output to the steering servo must be between 0 (left) and 200 (right)
+speed = 1000 # crusing speed, must be between 0 and 3600
 steering_correction = -10 # this compensates for any steering bias the car has. Positive numbers steer to the right
 start = time.time()
 stop = False
+left_motor = 4
+right_motor = 5
 
 PORT_NAME = '/dev/ttyUSB0' # this is for the Lidar
 
-def drive(speed):
-    servo (4,speed)
-    servo (5,speed)
+def drive(speed):  # speed must be between 0 and 3600
+    servo (left_motor,speed)
+    servo (right_motor,speed)
 
 def servo (channel, PWM):
     pulse = PWM + 300 # make sure pulse width at least 500
     pwm.set_pwm(channel,0, pulse) # channel, start of wave, end of wave
+
+def steer(angle):
+    global gain
+    drive (speed)
+    angle = int(100 + gain*angle)
+    print (angle)
+    servo (0,angle)
+    # Send motor commands
 
 def scan(lidar):
     global stop
@@ -42,7 +52,7 @@ def scan(lidar):
             if stop == True:
                 lidar.stop()
                 lidar.stop_motor()
-                c.send("motors",0,0,0)  # turn off wheel motors
+                drive(0)
                 lidar.disconnect()
                 break
             if (measurment[2] > 0 and measurment[2] < 90):  # in angular range
@@ -64,13 +74,6 @@ def scan(lidar):
                     drive_direction = 0
                 steer(drive_direction)  # Send data to motors
                 lasttime = time.time()  # reset 10Hz timer
-
-def steer(angle):
-    global speed, gain, stop
-    drive (speed)
-    servo (0,angle)
-    # Send motor commands
-
 
 def run():
     '''Main function'''
