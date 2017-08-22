@@ -88,6 +88,7 @@ def run():
     '''Main function'''
     lidar = RPLidar(PORT_NAME)
     lidar.start_motor()
+    servo (steer_servo,100) # center servo
     time.sleep(1)
     info = lidar.get_info()
     print(info)
