@@ -1,0 +1,12 @@
+examples/__pycache__
+examples/*.pyc
+examples/*.pgm
+examples/*.png
+examples/*.map
+python/breezyslam/*.pyc
+python/breezyslam/__pycache__
+python/build
+cpp/*.o
+cpp/*.so
+*.swp
+
