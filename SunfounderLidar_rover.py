@@ -11,9 +11,9 @@ import Adafruit_PCA9685
 pwm = Adafruit_PCA9685.PCA9685()
 
 angle_offset = 0 # this compensates for the Lidar being placed in a rotated position
-gain = 1.5 # this is the steering gain. The PWM output to the steering servo must be between 0 (left) and 200 (right)
-speed = 1000 # crusing speed, must be between 0 and 3600
-steering_correction = -10 # this compensates for any steering bias the car has. Positive numbers steer to the right
+gain = 10 # this is the steering gain. The PWM output to the steering servo must be between 0 (left) and 500 (right)
+speed = 3000 # crusing speed, must be between 0 and 3600
+steering_correction = 50 # this compensates for any steering bias the car has. Positive numbers steer to the right
 start = time.time()
 stop = False
 left_motor = 4 # which PWM output this is attached to
@@ -37,9 +37,9 @@ def servo (channel, PWM):
     pwm.set_pwm(channel,0, pulse) # channel, start of wave, end of wave
 
 def steer(angle):
-    angle = 100 + gain*angle
-    angle = int(constrain(angle,0,200))
-#    print ("PWM output: ", angle)
+    angle = 250 + steering_correction + gain*angle
+    angle = int(constrain(angle,0,600))
+    print ("PWM output: ", angle)
     servo (steer_servo,angle)
     new_speed = speed - (speed_adj*abs(angle-100))
     new_speed = constrain(new_speed, 100, 2000)
@@ -65,15 +65,15 @@ def scan(lidar):
                 break
             if (measurment[2] > 315 or measurment[2] < 45):  # in angular range
                 if (measurment[3] < 1000 and measurment[3] > 100): # in distance range
-                    print (measurment[2])
-                    if (measurment[2] < 45):   
+#                    print (measurment[2])
+                    if (measurment[2] < 45):
                         temp = measurment[2]
                     else:
                         temp = -1* (360-measurment[2]) # convert to negative angle to the left of center
                     data = data + temp # sum of the detected angles, so we can average later
 #                    range_sum = range_sum + measurment[3] # sum all the distances so we can normalize later
                     counter = counter + 1 # increment counter
-            if time.time() > (lasttime + 0.1):
+            if time.time() > (lasttime + 0.2):
 #                print("this should happen ten times a second")
                 if counter > 0:  # this means we see something
                     average_angle = (data/counter) - angle_offset # average of detected angles
@@ -106,6 +106,6 @@ def run():
         lidar.stop_motor()
         drive (0)
         lidar.disconnect()
- 
+
 if __name__ == '__main__':
     run()
