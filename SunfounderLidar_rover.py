@@ -11,15 +11,15 @@ import Adafruit_PCA9685
 pwm = Adafruit_PCA9685.PCA9685()
 
 angle_offset = 0 # this compensates for the Lidar being placed in a rotated position
-gain = 10 # this is the steering gain. The PWM output to the steering servo must be between 0 (left) and 500 (right)
-speed = 3000 # crusing speed, must be between 0 and 3600
-steering_correction = 50 # this compensates for any steering bias the car has. Positive numbers steer to the right
+gain = 3.1 # this is the steering gain. The PWM output to the steering servo must be between 0 (left) and 500 (right)
+speed = 4000 # crusing speed, must be between 0 and 3600
+steering_correction = 40 # this compensates for any steering bias the car has. Positive numbers steer to the right
 start = time.time()
 stop = False
 left_motor = 4 # which PWM output this is attached to
 right_motor = 5
 steer_servo = 0
-speed_adj = 10 # gain for slowing down in turns
+speed_adj = 2 # gain for slowing down in turns
 
 PORT_NAME = '/dev/ttyUSB0' # this is for the Lidar
 
@@ -42,8 +42,9 @@ def steer(angle):
     print ("PWM output: ", angle)
     servo (steer_servo,angle)
     new_speed = speed - (speed_adj*abs(angle-100))
-    new_speed = constrain(new_speed, 100, 2000)
+    new_speed = constrain(new_speed, 100, 5000)
     drive (new_speed)
+    drive (speed)
 
 
 
