@@ -7,13 +7,15 @@ import math
 import Adafruit_PCA9685
 
 
+method = 2  # which analytical technique should we use? 1 = average, 2 = longest free range, 3 = probability
+
 # Initialise the PCA9685 servo driver board using the default address (0x40).
 pwm = Adafruit_PCA9685.PCA9685()
 
-angle_offset = 0 # this compensates for the Lidar being placed in a rotated position
-gain = 3.1 # this is the steering gain. The PWM output to the steering servo must be between 0 (left) and 500 (right)
+angle_offset = 180 # this compensates for the Lidar being placed in a rotated position
+gain = 1.5 # this is the steering gain. The PWM output to the steering servo must be between 0 (left) and 500 (right)
 speed = 2000 # crusing speed, must be between 0 and 3600
-steering_correction = 40 # this compensates for any steering bias the car has. Positive numbers steer to the right
+steering_correction = 60 # this compensates for any steering bias the car has. Positive numbers steer to the right
 start = time.time()
 stop = False
 left_motor = 4 # which PWM output this is attached to
@@ -43,13 +45,14 @@ def steer(angle):
     servo (steer_servo,angle)
     new_speed = speed - (speed_adj*abs(angle-100))
     new_speed = constrain(new_speed, 100, 5000)
-#    drive (new_speed)
-    drive (speed)
-
-
+#    drive (new_speed)  # slow down in turns
+    drive (speed)   # don't slow down in turns
 
 def scan(lidar):
     global stop
+#    longest[0] = (0,0) # initialize a variable to keep the furthest-away 100 readings (angle, distance)
+    drive_direction = 0
+    furthest = 1000
     time1 = time.time()
     while True:
         counter = 0
@@ -64,32 +67,44 @@ def scan(lidar):
                 drive(0)
                 lidar.disconnect()
                 break
-            if (measurment[2] > 315 or measurment[2] < 45):  # in angular range
-                if (measurment[3] < 1000 and measurment[3] > 100): # in distance range
-#                    print (measurment[2])
-                    if (measurment[2] < 45):
-                        temp = measurment[2]
-                    else:
-                        temp = -1* (360-measurment[2]) # convert to negative angle to the left of center
-                    data = data + temp # sum of the detected angles, so we can average later
-#                    range_sum = range_sum + measurment[3] # sum all the distances so we can normalize later
-                    counter = counter + 1 # increment counter
-            if time.time() > (lasttime + 0.2):
-#                print("this should happen ten times a second")
-                if counter > 0:  # this means we see something
-                    average_angle = (data/counter) - angle_offset # average of detected angles
-                    print ("Average angle: ", average_angle)
-                    obstacle_direction = int(100*math.atan(math.radians(average_angle)))  # convert to a vector component
-                    drive_direction = -1 * obstacle_direction # steer in the opposite direction as obstacle (I'll replace this with a PID)
-#                    print ("Drive direction: ", drive_direction)
-                    counter = 0 # reset counter
-                    data = 0  # reset data
-                    range_sum = 0
-                else:
-                    drive_direction = 0
-                steer(drive_direction)  # Send data to motors
-                lasttime = time.time()  # reset 10Hz timer
-
+            if (measurment[2] > 120 or measurment[2] < 240):  # in angular range; lidar is actually pointing "backwards"
+                if method == 1:  # this is the averaging method, best for large areas
+                    if (measurment[3] < 1000 and measurment[3] > 100): # in distance range
+        #                    print (measurment[2])
+                        if (measurment[2] < 45):
+                            temp = measurment[2]
+                        else:
+                            temp = -1* (360-measurment[2]) # convert to negative angle to the left of center
+                        data = data + temp # sum of the detected angles, so we can average later
+        #                    range_sum = range_sum + measurment[3] # sum all the distances so we can normalize later
+                        counter = counter + 1 # increment counter
+                    if time.time() > (lasttime + 0.2): # do this five times a second
+                        if counter > 0:  # this means we see something
+                            average_angle = (data/counter) - angle_offset # average of detected angles
+                            print ("Average angle: ", average_angle)
+                            obstacle_direction = int(100*math.atan(math.radians(average_angle)))  # convert to a vector component
+                            drive_direction = -1 * obstacle_direction # steer in the opposite direction as obstacle (I'll replace this with a PID)
+            #                    print ("Drive direction: ", drive_direction)
+                            counter = 0 # reset counter
+                            data = 0  # reset data
+                            range_sum = 0
+                        else:
+                            drive_direction = 0
+                        steer(drive_direction)  # Send data to motors
+                        lasttime = time.time()  # reset 10Hz timer
+            if method == 2: # this is the "steer towards furthest empty area" approach, best for tight tracks
+                    if measurment[3] > 1000:
+                        if measurment[3] > furthest:
+                            furthest = measurment[3]
+                            angle = measurment[2]
+                            if angle > angle_offset:
+                                angle = angle_offset - angle
+                            drive_direction = int(100*math.atan(math.radians(angle)))  # convert to a vector component, and drive in the direction of free space
+                            print ('New furthest: ', furthest, "Angle:", angle, "Drive direction: ", drive_direction )
+                    if time.time() > (lasttime + 0.2): # do this five times a second
+                        furthest = 1000 # reset this
+                        steer(drive_direction)  # Send data to motors
+                        lasttime = time.time()  # reset 10Hz timer
 def run():
     '''Main function'''
     lidar = RPLidar(PORT_NAME)
