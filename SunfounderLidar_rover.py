@@ -12,7 +12,7 @@ method = 2  # which analytical technique should we use? 1 = average, 2 = longest
 # Initialise the PCA9685 servo driver board using the default address (0x40).
 pwm = Adafruit_PCA9685.PCA9685()
 
-angle_offset = 180 # this compensates for the Lidar being placed in a rotated position
+angle_offset = 0 # this compensates for the Lidar being placed in a rotated position
 gain = 1.5 # this is the steering gain. The PWM output to the steering servo must be between 0 (left) and 500 (right)
 speed = 2000 # crusing speed, must be between 0 and 3600
 steering_correction = 60 # this compensates for any steering bias the car has. Positive numbers steer to the right
@@ -67,7 +67,7 @@ def scan(lidar):
                 drive(0)
                 lidar.disconnect()
                 break
-            if (measurment[2] > 120 or measurment[2] < 240):  # in angular range; lidar is actually pointing "backwards"
+            if (measurment[2] < 120 or measurment[2] > 240):  # in angular range; lidar is actually pointing "backwards"
                 if method == 1:  # this is the averaging method, best for large areas
                     if (measurment[3] < 1000 and measurment[3] > 100): # in distance range
         #                    print (measurment[2])
@@ -92,16 +92,17 @@ def scan(lidar):
                             drive_direction = 0
                         steer(drive_direction)  # Send data to motors
                         lasttime = time.time()  # reset 10Hz timer
-            if method == 2: # this is the "steer towards furthest empty area" approach, best for tight tracks
+                if method == 2: # this is the "steer towards furthest empty area" approach, best for tight tracks
                     if measurment[3] > 1000:
                         if measurment[3] > furthest:
                             furthest = measurment[3]
                             angle = measurment[2]
-                            if angle > angle_offset:
-                                angle = angle_offset - angle
+                            if angle > 240:
+                                angle = -1 * (360 - angle)
                             drive_direction = int(100*math.atan(math.radians(angle)))  # convert to a vector component, and drive in the direction of free space
                             print ('New furthest: ', furthest, "Angle:", angle, "Drive direction: ", drive_direction )
                     if time.time() > (lasttime + 0.2): # do this five times a second
+                        print ("Selected furthest angle: ", drive_direction)
                         furthest = 1000 # reset this
                         steer(drive_direction)  # Send data to motors
                         lasttime = time.time()  # reset 10Hz timer
